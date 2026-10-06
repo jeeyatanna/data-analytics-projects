@@ -1,0 +1,226 @@
+---
+title: "Grp 8 Classification"
+author: "Jeeya Tanna"
+date: "2026-04-25"
+output: word_document
+---
+### Load Libraries
+
+```{r load-libraries}
+library(tidyverse)
+library(caret)
+library(e1071)
+library(rpart)
+library(rpart.plot)
+```
+
+### Load and Prepare Data
+
+```{r load-prepare-data}
+set.seed(123)
+
+nba <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+
+nba_clean <- nba %>%
+  filter(lg == "NBA", season >= 2021, season <= 2026) %>%
+  select(season, team, w, mov, srs, o_rtg, d_rtg, n_rtg, pace,
+         ts_percent, e_fg_percent, tov_percent, orb_percent,
+         drb_percent, opp_e_fg_percent, opp_tov_percent, ft_fga) %>%
+  drop_na()
+
+nba_clean$good_team <- ifelse(nba_clean$w > median(nba_clean$w, na.rm = TRUE), "Yes", "No")
+nba_clean$good_team <- as.factor(nba_clean$good_team)
+
+table(nba_clean$good_team)
+```
+
+### Split Data into Training and Test Sets
+
+```{r train-test-split}
+train_index <- createDataPartition(nba_clean$good_team, p = 0.70, list = FALSE)
+
+train <- nba_clean[train_index, ]
+test <- nba_clean[-train_index, ]
+
+nrow(train)
+nrow(test)
+```
+
+### Logistic Regression Model
+
+```{r logistic-regression}
+model_log <- glm(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                   ts_percent + e_fg_percent + tov_percent + orb_percent +
+                   drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                 data = train,
+                 family = binomial)
+
+summary(model_log)
+```
+
+### Evaluate Logistic Regression
+
+```{r evaluate-logistic-regression}
+prob_log <- predict(model_log, test, type = "response")
+
+pred_log <- ifelse(prob_log > 0.5, "Yes", "No")
+pred_log <- factor(pred_log, levels = levels(test$good_team))
+
+conf_log <- table(Predicted = pred_log, Actual = test$good_team)
+conf_log
+
+accuracy_log <- mean(pred_log == test$good_team)
+misclass_log <- 1 - accuracy_log
+
+accuracy_log
+misclass_log
+```
+
+### Naive Bayes Model
+
+```{r naive-bayes}
+model_nb <- naiveBayes(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                         ts_percent + e_fg_percent + tov_percent + orb_percent +
+                         drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                       data = train)
+
+model_nb
+```
+
+### Evaluate Naive Bayes
+
+```{r evaluate-naive-bayes}
+pred_nb <- predict(model_nb, test)
+
+conf_nb <- table(Predicted = pred_nb, Actual = test$good_team)
+conf_nb
+
+accuracy_nb <- mean(pred_nb == test$good_team)
+misclass_nb <- 1 - accuracy_nb
+
+accuracy_nb
+misclass_nb
+```
+
+### Classification Tree Model
+
+```{r classification-tree}
+model_tree <- rpart(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                      ts_percent + e_fg_percent + tov_percent + orb_percent +
+                      drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                    data = train,
+                    method = "class")
+
+rpart.plot(model_tree)
+```
+
+### Evaluate Classification Tree
+
+```{r evaluate-classification-tree}
+pred_tree <- predict(model_tree, test, type = "class")
+
+conf_tree <- table(Predicted = pred_tree, Actual = test$good_team)
+conf_tree
+
+accuracy_tree <- mean(pred_tree == test$good_team)
+misclass_tree <- 1 - accuracy_tree
+
+accuracy_tree
+misclass_tree
+```
+
+### SVM Model
+
+```{r svm-model}
+model_svm <- svm(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                   ts_percent + e_fg_percent + tov_percent + orb_percent +
+                   drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                 data = train,
+                 kernel = "radial",
+                 scale = TRUE)
+
+model_svm
+```
+
+### Evaluate SVM
+
+```{r evaluate-svm}
+pred_svm <- predict(model_svm, test)
+
+conf_svm <- table(Predicted = pred_svm, Actual = test$good_team)
+conf_svm
+
+accuracy_svm <- mean(pred_svm == test$good_team)
+misclass_svm <- 1 - accuracy_svm
+
+accuracy_svm
+misclass_svm
+```
+
+### Model Comparison
+
+```{r model-comparison}
+comparison <- data.frame(
+  Model = c("Logistic Regression", "Naive Bayes", "Classification Tree", "SVM"),
+  Accuracy = c(accuracy_log, accuracy_nb, accuracy_tree, accuracy_svm),
+  Misclassification_Rate = c(misclass_log, misclass_nb, misclass_tree, misclass_svm)
+)
+
+comparison
+```
+
+### Visualizations
+
+# Bar Plot of Good vs Not Good Teams
+```{r good-team-barplot}
+ggplot(nba_clean, aes(x = good_team, fill = good_team)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Yes" = "darkgreen", "No" = "tomato")) +
+  labs(title = "Distribution of Good vs Not Good Teams",
+       x = "Good Team",
+       y = "Number of Teams") +
+  theme_minimal()
+```
+
+# Model Accuracy Comparison Plot
+```{r accuracy-comparison-plot}
+ggplot(comparison, aes(x = Model, y = Accuracy, fill = Model)) +
+  geom_col() +
+  scale_fill_manual(values = c("steelblue", "orange", "purple", "darkred")) +
+  labs(title = "Accuracy Comparison Across Classification Models",
+       x = "Classification Model",
+       y = "Accuracy") +
+  ylim(0,1) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+# Wins by Good Team Classification
+```{r wins-boxplot}
+ggplot(nba_clean, aes(x = good_team, y = w, fill = good_team)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("Yes" = "gold", "No" = "skyblue")) +
+  labs(title = "Wins by Good Team Classification",
+       x = "Good Team",
+       y = "Wins") +
+  theme_minimal()
+```
+
+
+### Classification Interpretation
+
+For this classification section, a new response variable called `good_team` was created. Teams with wins above the median were classified as “Yes,” while teams at or below the median were classified as “No.” This allowed the models to predict whether an NBA team was a strong-performing team based on performance and shooting-efficiency variables.
+
+The four classification models used were logistic regression, Naive Bayes, classification tree, and SVM. The best model is the model with the highest accuracy and lowest misclassification rate. This means it made the most correct predictions when classifying teams as good or not good.
+
+## Comparison of Classification vs other Statistical Methods
+
+The overall project goal is to determine which NBA team is most likely to win using team performance and shooting-efficiency statistics. Different modeling approaches answer different types of questions.
+
+If the goal is to predict the **exact number of wins**, regression methods such as Multiple Linear Regression or Principal Component Regression are generally more appropriate because the response variable `w` (wins) is continuous. Regression models usually perform better when estimating a numeric outcome.
+
+If the goal is to predict whether a team is a **strong-performing team** or not, classification methods are more appropriate. In this section, teams were classified as `good_team = Yes` if wins were above the median and `No` otherwise. This converts the response into a binary outcome suitable for classification models.
+
+Among the classification models tested, Support Vector Machine (SVM) is expected to perform best because it handles complex relationships well. Logistic Regression is typically close behind and is easier to interpret. Classification Trees provide visual decision rules, while Naive Bayes may perform lower because many NBA predictors are correlated.
+
+Overall, classification is not automatically the best method for the full project. It is best for predicting categories, while regression is best for predicting the actual number of wins.

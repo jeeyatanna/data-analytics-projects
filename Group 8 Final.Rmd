@@ -1,0 +1,581 @@
+---
+title: "Group 8 Combined"
+author: "Ethne, Jeeya, Jolisia, Rachel, Sophia"
+date: "2026-05-05"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+I. Descriptive Statistics - Rachel
+```{r}
+nba <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+head(nba)
+mean(nba$f_tr)
+mean(nba$f_tr)
+mean(nba$x3p_ar)
+#plot(nba$f_tr ~ nba$f_tr, nba$x3p_ar, data = nba)
+#hist(nba$f_tr ~ nba$f_tr, nba$x3p_ar, data = nba)
+plot(nba$f_tr)
+barplot(nba$f_tr)
+plot(nba$x3p_ar)
+hist(nba$x3p_ar)
+hist(nba$f_tr)
+mean(nba$n_rtg)
+#print(mean(na.omit(nba$n_rtg))
+mode(nba$n_rtg)
+mean(nba$n_rtg)
+nrtga <- na.omit(nba$n_rtg)
+median(nrtga)
+mean(nrtga)
+hist(nba$n_rtg, main="Distribution of Net Rating", xlab="Net Rating", col="pink")
+plot(nba$f_tr, nba$n_rtg, main="",
+xlab="Offensive Rating", ylab="Defensive Rating")
+cor(nba$f_tr, nba$n_rtg, use = "complete.obs")
+barplot(nba$ts_percent)
+library ( ggplot2 )
+library ( tidyr )
+boxplot(nba$ts_percent)
+data_counts <- table(nba$playoffs, nba$team)
+pie(data_counts)
+#pie(nba$team)
+boxplot(nba$e_fg_percent)
+barplot(nba$e_fg_percent)
+#pie(nba$e_fg_percent)
+pie(data_counts)
+barplot(data_counts)
+#ggplot(data_counts)
+data_counts_df <- as.data.frame(data_counts)
+#ggplot(data = data_counts_df, aes(x = Var2, fill = Var1)) +
+#geom_bar(position = "dodge") +
+#labs(title = "",
+#x = "",
+#y = "") +
+#theme_minimal()
+ball <-table(nba$team, nba$tov_percent)
+pie(ball)
+#levels(factor(ball))
+barplot(ball)
+#pie(nba$playoffs)
+barplot(nba$tov_percent)
+#ggplot(nba$playoffs)
+balll<- table(nba$playoffs, nba$team)
+pie (balll, labels = nba$team,
+main = " Diamonds by Cut ( Pie ) " ,
+col = rainbow ( length ( nba$team ))
++theme_minimal())
+library(dplyr)
+top_5 <- head(balll, 5)
+pie(top_5)
+sorted_teamss <- sort(table(nba$team), decreasing = TRUE)
+top_5 <- head(sorted_teamss, 5)
+pie(top_5, main ="Teams that made the playoffs the most times" )
+pct <- round (100 * top_5 / sum ( top_5 ) , 1)
+lbls <- paste ( names ( top_5) , paste0 ( pct , " % " ))
+pie(top_5, labels = lbls, main = "Teams that made the playoffs the most times
+")
+sd(nba$ts_percent)
+sd(nba$f_tr)
+sd(nba$e_fg_percent)
+mean(nba$n_rtg)
+net <-na.omit(nba$n_rtg)
+mean(net)
+plot(net)
+median(net)
+hist(net)
+mode(nba$tov_percent)
+median(nba$tov_percent)
+hist(nba$tov_percent)
+mean(nba$tov_percent)
+median(nba$season)
+mode(nba$team)
+team <- table(nba$team)
+pie(team)
+basket <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+mean(basket$age)
+age <- na.omit(basket$age)
+mean(age)
+#hist(basket$w ~ basket$l)
+lose <- na.omit(basket$l)
+win <- na.omit(basket$w)
+boxplot(win, lose, names = c("win","Lose"))
+pw <- na.omit(basket$pw)
+pl <- na.omit(basket$pl)
+boxplot(pw, pl, names= c("p wins","p loses"))
+hist(basket$mov, xlab = "margin of victory")
+median(basket$sos)
+sos <- na.omit(basket$sos)
+median(sos)
+mean(sos)
+hist(sos)
+sd(basket$srs)
+srs <- na.omit(basket$srs)
+sd(srs)
+off <- na.omit(basket$o_rtg)
+mean(off)
+mean(basket$pace)
+pace <-na.omit(basket$pace)
+mean(pace)
+median(pace)
+orb <- na.omit(basket$orb_percent)
+mode(orb)
+mean(orb)
+drb <- na.omit(basket$drb_percent)
+boxplot(orb, drb, names = c("offensive rebound %","defensiverebound%"))
+sd(basket$opp_e_fg_percent)
+opp <- na.omit(basket$opp_e_fg_percent)
+sd(opp)
+hist(opp)
+tov<- na.omit(basket$opp_tov_percent)
+ft <- na.omit(basket$opp_ft_fga)
+hist(tov)
+median(tov)
+hist(ft)
+median(ft)
+mean(basket$ft_fga)
+fga <- na.omit(basket$ft_fga)
+mean(fga)
+hist(fga)
+#medain(fga)
+median(fga)
+att <- na.omit(basket$attend_g)
+hist(att, xlab= "game attandance")
+median(att)
+```
+
+II. Regression
+a. Multiple Linear Regression - Jolisia
+
+Loading the Dataset
+```{r}
+library(tidyverse)
+library(caret)
+
+TeamData_raw <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+
+TeamData_Clean <- TeamData_raw %>%
+  filter(season >= 2021 & season <= 2026) %>%
+  select(season, team, w, o_rtg, d_rtg, ts_percent) %>%
+  drop_na()
+
+head(TeamData_Clean)
+
+str(TeamData_Clean)
+summary(TeamData_Clean)
+```
+
+Correlation Matrix
+```{r}
+round(cor(TeamData_Clean[, c("w", "o_rtg", "d_rtg", "ts_percent")]), 4)
+```
+
+Multiple Linear Regression Plots
+```{r}
+model_mlr <- lm(w ~ o_rtg + d_rtg + ts_percent, data = TeamData_Clean)
+summary(model_mlr)
+plot(model_mlr$fitted.values,
+     resid(model_mlr),
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted")
+
+abline(h = 0, col = "red", lwd = 2)
+
+hist(rstandard(model_mlr),
+     col = "orange",
+     main = "Histogram of Standardized Residuals",
+     xlab = "Standardized Residuals")
+
+qqnorm(rstandard(model_mlr))
+qqline(rstandard(model_mlr), col = "red", lwd = 2)
+
+res <- rstandard(model_mlr)
+shapiro.test(res)
+```
+
+b. Polynomial Regression - Jolisia
+
+Train-Test Split
+```{r}
+set.seed(123)
+
+n <- nrow(TeamData_Clean)
+
+train_idx <- sample(1:n, size = round(0.7 * n))
+
+train <- TeamData_Clean[train_idx, ]
+test <- TeamData_Clean[-train_idx, ]
+
+model_Tr <- lm(w ~ o_rtg + d_rtg + ts_percent, data = train)
+
+summary(model_Tr)
+```
+
+Train-Test Model Plot and Error Metrics
+```{r}
+plot(model_Tr$fitted.values,
+     resid(model_Tr),
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted - Training Model")
+
+abline(h = 0, col = "blue", lwd = 2)
+
+pred_test <- predict(model_Tr, newdata = test)
+
+mse <- mean((test$w - pred_test)^2)
+rmse <- sqrt(mse)
+mae <- mean(abs(test$w - pred_test))
+
+mse
+rmse
+mae
+```
+
+Polynomial Regression Plot
+```{r}
+x <- TeamData_Clean$o_rtg
+y <- TeamData_Clean$w
+
+fit_lin <- lm(w ~ o_rtg, data = TeamData_Clean)
+
+fit_quad <- lm(w ~ poly(o_rtg, 2, raw = TRUE), data = TeamData_Clean)
+
+fit_cub <- lm(w ~ poly(o_rtg, 3, raw = TRUE), data = TeamData_Clean)
+
+summary(fit_lin)
+summary(fit_quad)
+summary(fit_cub)
+
+xg <- seq(min(TeamData_Clean$o_rtg),
+          max(TeamData_Clean$o_rtg),
+          length.out = 200)
+
+p_lin <- predict(fit_lin,
+                 newdata = data.frame(o_rtg = xg))
+
+p_quad <- predict(fit_quad,
+                  newdata = data.frame(o_rtg = xg))
+
+p_cub <- predict(fit_cub,
+                 newdata = data.frame(o_rtg = xg))
+
+plot(x, y,
+     pch = 16,
+     cex = 0.9,
+     xlab = "Offensive Rating",
+     ylab = "Wins",
+     main = "Polynomial Regression: Wins vs Offensive Rating")
+
+lines(xg, p_lin, lwd = 2, col = "blue")
+
+lines(xg, p_quad, lwd = 2, lty = 2, col = "red")
+
+lines(xg, p_cub, lwd = 2, lty = 3, col = "green4")
+
+legend("topright",
+       legend = c("Linear", "Quadratic", "Cubic"),
+       lwd = 2,
+       lty = c(1, 2, 3),
+       col = c("blue", "red", "green4"),
+       bty = "n")
+```
+
+AIC and BIC Comparison
+```{r}
+AIC(fit_lin, fit_quad, fit_cub)
+BIC(fit_lin, fit_quad, fit_cub)
+```
+
+c. Principal Component Regression (PCR) - Ethne
+
+Loading and Cleaning Data
+```{r}
+library(ISLR2)
+library(ggplot2)
+data <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+teams_data <- na.omit(data[, c("mov","sos","pace","f_tr","x3p_ar","ts_percent","e_fg_percent","tov_percent","orb_percent","ft_fga","opp_e_fg_percent","opp_tov_percent","drb_percent","opp_ft_fga")])
+```
+
+PCR Split
+```{r}
+library(pls)
+set.seed(123)
+n <- nrow(teams_data)
+train_idx <- sample(1:n, size = round(0.7*n))
+train <- teams_data[train_idx, ]
+test <- teams_data[-train_idx, ]
+dim(train)
+dim(test)
+```
+
+Fit PCR on Train Data
+```{r}
+pcr_train <- pcr(mov ~ .-mov, data = train, scale = TRUE, validation = "CV")
+summary(pcr_train)
+validationplot(pcr_train, val.type = "MSEP")
+```
+
+PCR on Test Data & RMSE
+```{r}
+pred_pcr <- predict(pcr_train, test, ncomp = 10)
+RMSE <- function(y, yhat) sqrt(mean((y - yhat)^2))
+test_rmse_pcr <- RMSE(test$mov, pred_pcr)
+test_rmse_pcr
+```
+
+OLS Fit
+```{r}
+ols_fit <- lm(mov ~ .-mov, data = train)
+summary(ols_fit)
+```
+
+d. Induction Tree - Ethne
+```{r}
+library(ISLR2)
+library(rpart)
+library(rpart.plot)
+data <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+data <- na.omit(data)
+set.seed(123)
+n <-nrow(data)
+train_idx <- sample(1:n, 0.7 * n)
+train <- data[train_idx, ]
+test <- data[-train_idx, ]
+tree_model <- rpart(w ~ pace + o_rtg + d_rtg + ts_percent + sos,
+data = train, method = "anova",
+control = rpart.control(cp = 0.01))
+rpart.plot(tree_model, type = 4, extra = 1,
+clip.right.labs = FALSE,
+varlen = 0, faclen = 3)
+printcp(tree_model)
+plotcp(tree_model)
+```
+
+Fit Pruned Tree
+```{r}
+fit_pr <- prune(tree_model, cp = 0.017459)
+rpart.plot(fit_pr, type = 4, extra = 1, fallen.leaves = TRUE,
+digits = 3, varlen = 0, faclen = 3)
+```
+
+Predict and Compare
+```{r}
+pred <- predict(fit_pr, test)
+head(data.frame(Actual = test$w, Predicted = pred))
+rmse <- function(y, yhat) sqrt(mean((y-yhat)^2))
+test_rmse_tree <- rmse(test$w, pred)
+test_rmse_tree
+```
+
+III. Classification - Jeeya
+
+Loading and Cleaning Data
+``` {r}
+library(tidyverse)
+library(caret)
+library(e1071)
+library(rpart)
+library(rpart.plot)
+
+set.seed(123)
+nba <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+
+nba_clean <- nba %>%
+  filter(lg == "NBA", season >= 2021, season <= 2026) %>%
+  select(season, team, w, mov, srs, o_rtg, d_rtg, n_rtg, pace,
+         ts_percent, e_fg_percent, tov_percent, orb_percent,
+         drb_percent, opp_e_fg_percent, opp_tov_percent, ft_fga) %>%
+  drop_na()
+
+nba_clean$good_team <- ifelse(nba_clean$w > median(nba_clean$w, na.rm = TRUE), "Yes", "No")
+nba_clean$good_team <- as.factor(nba_clean$good_team)
+
+table(nba_clean$good_team)
+```
+
+Split Data into Training and Test Sets
+```{r}
+train_index <- createDataPartition(nba_clean$good_team, p = 0.70, list = FALSE)
+
+train <- nba_clean[train_index, ]
+test <- nba_clean[-train_index, ]
+
+nrow(train)
+nrow(test)
+```
+
+a. Logistic Regression
+```{r}
+model_log <- glm(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                   ts_percent + e_fg_percent + tov_percent + orb_percent +
+                   drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                 data = train,
+                 family = binomial)
+
+summary(model_log)
+
+prob_log <- predict(model_log, test, type = "response")
+
+pred_log <- ifelse(prob_log > 0.5, "Yes", "No")
+pred_log <- factor(pred_log, levels = levels(test$good_team))
+
+conf_log <- table(Predicted = pred_log, Actual = test$good_team)
+conf_log
+
+accuracy_log <- mean(pred_log == test$good_team)
+misclass_log <- 1 - accuracy_log
+
+accuracy_log
+misclass_log
+```
+
+b. Classification Tree
+```{r}
+model_tree <- rpart(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                      ts_percent + e_fg_percent + tov_percent + orb_percent +
+                      drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                    data = train,
+                    method = "class")
+
+rpart.plot(model_tree)
+
+pred_tree <- predict(model_tree, test, type = "class")
+
+conf_tree <- table(Predicted = pred_tree, Actual = test$good_team)
+conf_tree
+
+accuracy_tree <- mean(pred_tree == test$good_team)
+misclass_tree <- 1 - accuracy_tree
+
+accuracy_tree
+misclass_tree
+```
+
+c. Naive Bayes - Sophia
+```{r}
+model_nb <- naiveBayes(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                         ts_percent + e_fg_percent + tov_percent + orb_percent +
+                         drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                       data = train)
+
+model_nb
+
+pred_nb <- predict(model_nb, test)
+
+conf_nb <- table(Predicted = pred_nb, Actual = test$good_team)
+conf_nb
+
+accuracy_nb <- mean(pred_nb == test$good_team)
+misclass_nb <- 1 - accuracy_nb
+
+accuracy_nb
+misclass_nb
+```
+
+d. Support Vector Machine (SVM) - Sophia
+```{r}
+model_svm <- svm(good_team ~ mov + srs + o_rtg + d_rtg + n_rtg + pace +
+                   ts_percent + e_fg_percent + tov_percent + orb_percent +
+                   drb_percent + opp_e_fg_percent + opp_tov_percent + ft_fga,
+                 data = train,
+                 kernel = "radial",
+                 scale = TRUE)
+
+model_svm
+
+pred_svm <- predict(model_svm, test)
+
+conf_svm <- table(Predicted = pred_svm, Actual = test$good_team)
+conf_svm
+
+accuracy_svm <- mean(pred_svm == test$good_team)
+misclass_svm <- 1 - accuracy_svm
+
+accuracy_svm
+misclass_svm
+```
+
+Model Comparison
+```{r}
+comparison <- data.frame(
+  Model = c("Logistic Regression", "Naive Bayes", "Classification Tree", "SVM"),
+  Accuracy = c(accuracy_log, accuracy_nb, accuracy_tree, accuracy_svm),
+  Misclassification_Rate = c(misclass_log, misclass_nb, misclass_tree, misclass_svm)
+)
+
+comparison
+```
+
+Visualizations
+Bar Plot of Good vs Not Good Teams
+```{r}
+ggplot(nba_clean, aes(x = good_team, fill = good_team)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Yes" = "orange", "No" = "black")) +
+  labs(title = "Distribution of Good vs Not Good Teams",
+       x = "Good Team",
+       y = "Number of Teams") +
+  theme_minimal()
+```
+
+Model Accuracy Comparison Plot
+```{r}
+ggplot(comparison, aes(x = Model, y = Accuracy, fill = Model)) +
+  geom_col() +
+  scale_fill_manual(values = c("steelblue", "orange", "purple", "darkred")) +
+  labs(title = "Accuracy Comparison Across Classification Models",
+       x = "Classification Model",
+       y = "Accuracy") +
+  ylim(0,1) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Wins by Good Team Classification
+```{r}
+ggplot(nba_clean, aes(x = good_team, y = w, fill = good_team)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("Yes" = "orange", "No" = "black")) +
+  labs(title = "Wins by Good Team Classification",
+       x = "Good Team",
+       y = "Wins") +
+  theme_minimal()
+```
+
+
+IV. K Means Clustering - Ethne
+
+Elbow Plot
+```{r}
+data <- read.csv("/Users/jeeya/Downloads/TeamSummaries_raw.csv")
+data_omit <- na.omit(data)
+tot.withinss<- vector(mode="numeric", length = 10)
+set.seed(123)
+for(i in 1:10){
+teamsElbow <- kmeans(data_omit[, c("o_rtg", "d_rtg", "pace", "ts_percent",
+"x3p_ar", "tov_percent", "orb_percent")], centers = i, nstart = 25)
+tot.withinss[i] <- teamsElbow$tot.withinss}
+plot(1:length(tot.withinss), tot.withinss,
+type = "b", pch = 19,
+main = "Elbow Plot",
+ylab = "Total Within SS",
+xlab = "Number of Centers (clusters)")
+```
+
+Cluster Plot
+```{r}
+library(cluster)
+set.seed(123)
+teamsCluster <- kmeans(x = data_omit[, c("o_rtg", "d_rtg","ts_percent",
+"pace", "x3p_ar", "tov_percent", "orb_percent")],centers = 4, nstart = 25)
+teamsCluster
+clusplot(x=data_omit[, c("o_rtg", "d_rtg", "pace", "ts_percent", "x3p_ar",
+"tov_percent", "orb_percent")],
+teamsCluster$cluster,
+main = "Cluster Plot",
+color = TRUE,
+shade = TRUE,
+labels = 0,
+lines = 0)
+```

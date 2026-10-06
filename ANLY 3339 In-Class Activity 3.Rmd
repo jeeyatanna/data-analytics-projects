@@ -1,0 +1,81 @@
+---
+title: "ANLY3339 In-Class Activity 3"
+author: "Jeeya Tanna"
+date: "2026-02-23"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Load Dataset
+```{r}
+data(mtcars)
+dim(mtcars)
+```
+
+2. Variables
+Response = mpg
+Predictor = hp, wt, cyl
+
+3. Analysis
+``` {r}
+# Correlation matrix (mpg vs predictors)
+round(cor(mtcars[, c("mpg", "hp", "wt", "cyl")]), 2)
+
+# Scatterplot matrix to visualize relationships
+pairs(mtcars[, c("mpg", "hp", "wt", "cyl")], pch = 19, col = "blue")
+```
+
+4. Train-Test Split
+``` {r}
+set.seed(123) # For reproducible split
+n <- nrow(mtcars)
+train_idx <- sample(1:n, size = round(0.7 * n))
+
+train <- mtcars[train_idx, ] # 70% training
+test <- mtcars[-train_idx, ]  # 30% testing
+
+# Report size of each set
+nrow(train) 
+nrow(test)
+```
+
+5. Regression Model
+``` {r}
+model_mtcars <- lm(mpg ~ hp + wt + cyl, data = train)
+summary(model_mtcars)
+```
+
+6. Goodness of Fit
+R2 = 0.8595
+Adjusted R2 = 0.8361
+
+7. Model Assumptions
+``` {r}
+# Linearity and Constant Variance (Homoscedasticity)
+plot(model_mtcars$fitted.values, resid(model_mtcars),
+     xlab = "Fitted values", ylab = "Residuals", main = "Residuals vs Fitted")
+abline(h = 0, col = "red", lwd = 2)
+
+# Normality Check (Q-Q Plot and Shapiro-Wilk)
+qqnorm(rstandard(model_mtcars))
+qqline(rstandard(model_mtcars))
+shapiro.test(rstandard(model_mtcars))
+```
+
+8. Prediction on Test Data
+``` {r}
+# Predictions on TEST set
+pred_test <- predict(model_mtcars, newdata = test)
+
+# Error metrics
+mse  <- mean((test$mpg - pred_test)^2)
+rmse <- sqrt(mse)
+mae  <- mean(abs(test$mpg - pred_test))
+
+# Report metrics
+data.frame(MSE = mse, RMSE = rmse, MAE = mae)
+```
+

@@ -1,0 +1,131 @@
+---
+title: "InClassActivity5"
+author: "Jeeya Tanna"
+date: "2026-03-11"
+output: word_document
+---
+Step 1 Loading Dataset
+```{r}
+library(splines)
+data(airquality)
+aq <- na.omit(airquality[, c("Ozone","Temp")])
+head(aq)
+```
+
+Step 2 Train-Test Split
+```{r}
+set.seed(1)
+
+n <- nrow(aq)
+train_index <- sample(1:n, size = 0.7*n)
+
+train <- aq[train_index, ]
+test <- aq[-train_index, ]
+
+nrow(train)
+nrow(test)
+```
+
+Step 3  
+```{r}
+cor(train$Ozone, train$Temp)
+plot(train$Temp, train$Ozone,
+     xlab="Temperature",
+     ylab="Ozone",
+     main="Ozone vs Temperature")
+```
+
+Step 4
+```{r}
+lm_model <- lm(Ozone ~ Temp, data=train)
+summary(lm_model)
+
+plot(lm_model$fitted.values, lm_model$residuals,
+     xlab="Fitted Values",
+     ylab="Residuals",
+     main="Residuals vs Fitted")
+abline(h=0)
+
+AIC(lm_model)
+```
+
+Step 5
+```{r}
+poly_model <- lm(Ozone ~ poly(Temp,2), data=train)
+summary(poly_model)
+AIC(poly_model)
+```
+
+Step 6
+```{r}
+quad_spline <- lm(Ozone ~ bs(Temp, degree=2), data=train)
+AIC(quad_spline)
+```
+
+Step 7
+```{r}
+cubic_spline <- lm(Ozone ~ bs(Temp, degree=3), data=train)
+AIC(cubic_spline)
+```
+
+Step 8
+```{r}
+natural_spline <- lm(Ozone ~ ns(Temp), data=train)
+AIC(natural_spline)
+```
+
+Step 9 Smoothing Spline models
+```{r}
+spline_gcv <- smooth.spline(train$Temp, train$Ozone)
+RSS_gcv <- sum((train$Ozone - predict(spline_gcv, train$Temp)$y)^2)
+df_gcv <- spline_gcv$df
+AIC_gcv <- nrow(train) * log(RSS_gcv / nrow(train)) + 2 * df_gcv
+
+spline_df6 <- smooth.spline(train$Temp, train$Ozone, df=6)
+RSS_df6 <- sum((train$Ozone - predict(spline_df6, train$Temp)$y)^2)
+df6 <- spline_df6$df
+AIC_df6 <- nrow(train) * log(RSS_df6 / nrow(train)) + 2 * df6
+
+spline_df10 <- smooth.spline(train$Temp, train$Ozone, df=10)
+RSS_df10 <- sum((train$Ozone - predict(spline_df10, train$Temp)$y)^2)
+df10 <- spline_df10$df
+AIC_df10 <- nrow(train) * log(RSS_df10 / nrow(train)) + 2 * df10
+
+AIC_gcv
+AIC_df6
+AIC_df10
+```
+
+Step 10 Evaluate models on Test Data
+```{r}
+rmse <- function(actual, predicted) {
+  sqrt(mean((actual - predicted)^2))
+}
+
+pred_lm <- predict(lm_model, newdata=test)
+pred_poly <- predict(poly_model, newdata=test)
+pred_quad <- predict(quad_spline, newdata=test)
+pred_cubic <- predict(cubic_spline, newdata=test)
+pred_ns <- predict(natural_spline, newdata=test)
+pred_spline_gcv <- predict(spline_gcv, test$Temp)$y
+pred_spline_df6 <- predict(spline_df6, test$Temp)$y
+pred_spline_df10 <- predict(spline_df10, test$Temp)$y
+
+rmse_lm <- rmse(test$Ozone, pred_lm)
+rmse_poly <- rmse(test$Ozone, pred_poly)
+rmse_quad <- rmse(test$Ozone, pred_quad)
+rmse_cubic <- rmse(test$Ozone, pred_cubic)
+rmse_ns <- rmse(test$Ozone, pred_ns)
+rmse_spline_gcv <- rmse(test$Ozone, pred_spline_gcv)
+rmse_spline_df6 <- rmse(test$Ozone, pred_spline_df6)
+rmse_spline_df10 <- rmse(test$Ozone, pred_spline_df10)
+
+rmse_lm
+rmse_poly
+rmse_quad
+rmse_cubic
+rmse_ns
+rmse_spline_gcv
+rmse_spline_df6
+rmse_spline_df10
+```

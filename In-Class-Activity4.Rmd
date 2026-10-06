@@ -1,0 +1,130 @@
+---
+title: "In-Class-Activity4"
+author: "Jeeya Tanna"
+date: "2026-03-04"
+output: word_document
+---
+
+Step 1: Load dataset
+```{r}
+library(ISLR2)
+library(splines)
+data(Wage)
+d <- na.omit(Wage[, c("wage", "age")])
+```
+
+Step 2: Split data into training and test sets
+```{r}
+n <- nrow(d)
+train_idx <- sample(1:n, size = 0.7 * n)
+train <- d[train_idx, ]
+test  <- d[-train_idx, ]
+
+cat("Train n =", nrow(train), "\n")
+cat("Test n  =", nrow(test), "\n")
+
+kn <- as.numeric(quantile(train$age, probs = c(0.25, 0.50, 0.75)))
+cat("Knots:", kn, "\n")
+```
+
+Step 3: Fit quadratic polynomial regression to train set
+```{r}
+fit_poly <- lm(wage ~ poly(age, 2, raw = TRUE), data = train)
+b <- coef(fit_poly)
+cat(sprintf("\nQuadratic polynomial:\nwage_hat = %.4f + %.4f*age + %.4f*age^2\n", b[1], b[2], b[3]))
+```
+
+Step 4: Fit quadratic spline on train set
+```{r}
+fit_s2   <- lm(wage ~ bs(age, degree = 2, knots = kn), data = train)
+b2 <- coef(fit_s2)
+cat("\nQuadratic spline (B-spline basis):\n")
+cat(sprintf("wage_hat = %.4f + %.4f*B1(age) + %.4f*B2(age) + %.4f*B3(age) + %.4f*B4(age) + %.4f*B5(age)\n",
+            b2[1], b2[2], b2[3], b2[4], b2[5], b2[6]))
+```
+
+Step 5: Fit cubic spline on train set
+```{r}
+fit_s3   <- lm(wage ~ bs(age, degree = 3, knots = kn), data = train)
+b3 <- coef(fit_s3)
+cat("\nCubic spline (B-spline basis):\n")
+cat(sprintf("wage_hat = %.4f + %.4f*B1(age) + %.4f*B2(age) + %.4f*B3(age) + %.4f*B4(age) + %.4f*B5(age) + %.4f*B6(age)\n",
+            b3[1], b3[2], b3[3], b3[4], b3[5], b3[6], b3[7]))
+```
+
+Step 6: Fit simple linear regression model on train set
+```{r}
+fit_lin  <- lm(wage ~ age, data = train)
+bl <- coef(fit_lin)
+cat(sprintf("\nSimple linear:\nwage_hat = %.4f + %.4f*age\n", bl[1], bl[2]))
+```
+
+Summary tables:
+```{r}
+model_stats <- function(m) {
+  s <- summary(m)
+  fp <- pf(s$fstatistic[1], s$fstatistic[2], s$fstatistic[3], lower.tail = FALSE)
+  c(R2 = s$r.squared, Adj_R2 = s$adj.r.squared, RSE = s$sigma, F_pvalue = fp, BIC = BIC(m))
+}
+
+cat("\n--- Coefficient significance (use p-values) ---\n")
+print(summary(fit_poly)$coefficients)
+print(summary(fit_s2)$coefficients)
+print(summary(fit_s3)$coefficients)
+print(summary(fit_lin)$coefficients)
+
+cat("\n--- Model stats on TRAIN ---\n")
+stats <- rbind(
+  Polynomial = model_stats(fit_poly),
+  QuadSpline = model_stats(fit_s2),
+  CubicSpline = model_stats(fit_s3),
+  Linear = model_stats(fit_lin)
+)
+print(stats)
+```
+
+Step 7: Evaluate models on train set with BIC
+```{r}
+cat("\nBIC ranking (train):\n")
+print(sort(c(
+  Polynomial = BIC(fit_poly),
+  QuadSpline = BIC(fit_s2),
+  CubicSpline = BIC(fit_s3),
+  Linear = BIC(fit_lin)
+)))
+```
+
+Step 8: Evaluate models on test set
+```{r}
+rmse <- function(y, yhat) sqrt(mean((y - yhat)^2))
+
+pred_poly <- predict(fit_poly, newdata = test)
+pred_s2   <- predict(fit_s2,   newdata = test)
+pred_s3   <- predict(fit_s3,   newdata = test)
+pred_lin  <- predict(fit_lin,  newdata = test)
+
+rmse_vals <- c(
+  Polynomial = rmse(test$wage, pred_poly),
+  QuadSpline = rmse(test$wage, pred_s2),
+  CubicSpline = rmse(test$wage, pred_s3),
+  Linear = rmse(test$wage, pred_lin)
+)
+cat("\nRMSE ranking (test):\n")
+print(sort(rmse_vals))
+```
+
+Step 9: Visualize fits on training data
+```{r}
+age_seq <- seq(min(train$age), max(train$age), length.out = 300)
+
+plot(train$age, train$wage, pch = 19, col = "grey70",
+     xlab = "Age", ylab = "Wage", main = "Wage ~ Age (Train)")
+lines(age_seq, predict(fit_lin,  data.frame(age = age_seq)), col = "black", lwd = 2, lty = 2)
+lines(age_seq, predict(fit_poly, data.frame(age = age_seq)), col = "red", lwd = 2)
+lines(age_seq, predict(fit_s2,   data.frame(age = age_seq)), col = "blue", lwd = 2)
+lines(age_seq, predict(fit_s3,   data.frame(age = age_seq)), col = "orange", lwd = 2)
+legend("topright",
+       legend = c("Linear", "Polynomial (deg 2)", "Quadratic spline", "Cubic spline"),
+       col = c("black", "red", "blue", "orange"),
+       lty = c(2, 1, 1, 1), lwd = 2, bty = "n")
+```

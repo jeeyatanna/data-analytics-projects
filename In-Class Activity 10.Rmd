@@ -1,0 +1,72 @@
+---
+title: "In-Class Activity 10"
+author: "Jeeya Tanna"
+date: "2026-04-22"
+output: word_document
+---
+
+1. Exploring the data
+a) Display the first few rows
+```{r}
+url <- "https://raw.githubusercontent.com/fammediavilla2/datasets/main/toothpaste.csv"
+toothpaste <- read.table(file = url, header = TRUE, sep = ",")
+head(toothpaste)
+```
+b) Number of rows and columns
+```{r}
+dim(toothpaste)
+```
+
+c) Columns for clustering
+```{r}
+toothpaste[,1:6]
+```
+2.
+a) Elbow Plot
+```{r}
+tot.withinss <- vector(mode = "numeric", length = 10)
+set.seed(123)
+
+for (i in 1:10) {
+  irisCluster <- kmeans(toothpaste[,1:6], centers = i, nstart = 10)
+  tot.withinss[i] <- irisCluster$tot.withinss
+}
+
+plot(1:10, tot.withinss, type = "b", pch = 19,
+     main = "Elbow Plot",
+     ylab = "Total Within SS",
+     xlab = "Number of Clusters")
+```
+
+b) K-means Clustering
+```{r}
+set.seed(123)
+kmeans_result <- kmeans(toothpaste[,1:6], centers = 3, nstart = 10)
+kmeans_result
+```
+3.
+a) Distance Matrix
+```{r}
+dist_matrix <- dist(toothpaste[,1:6])
+```
+
+b) Complete linkage dendrogram
+```{r}
+hc_complete <- hclust(dist_matrix, method = "complete")
+plot(hc_complete)
+```
+c) Cut tree (complete linkage)
+```{r}
+cutree(hc_complete, k = 3)
+```
+
+d) Single Linkage dendrogram
+```{r}
+hc_single <- hclust(dist_matrix, method = "single")
+plot(hc_single)
+```
+
+e) Cut Tree
+```{r}
+cutree(hc_single, k = 2)
+```

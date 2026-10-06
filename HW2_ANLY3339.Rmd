@@ -1,0 +1,91 @@
+---
+title: "HW2_ANLY3339"
+author: "Jeeya Tanna"
+date: "2026-03-02"
+output: word_document
+---
+Step 1: Load the dataset
+```{r}
+library(ISLR2)
+library(pls)
+library(caret)
+
+data(Hitters)
+```
+Step 2: Remove missing values and creat LogSalary
+```{r}
+Hitters2 <- na.omit(Hitters)
+Hitters2$logSalary <- log(Hitters2$Salary)
+
+nrow(Hitters2)
+```
+Number of observation after removing the missing values = 263
+
+Step 3: Train-Test Split
+```{r}
+set.seed(123)
+
+train_index <- createDataPartition(Hitters2$logSalary, p = 0.7, list = FALSE)
+
+train <- Hitters2[train_index, ]
+test  <- Hitters2[-train_index, ]
+
+nrow(train)
+nrow(test)
+```
+Training observations = 185
+Test observations = 78
+
+Step 4: Fit PCR on training set
+```{r}
+set.seed(123)
+
+pcr_model <- pcr(logSalary ~ . - Salary,
+                 data = train,
+                 scale = TRUE,
+                 validation = "CV")
+
+summary(pcr_model)
+validationplot(pcr_model, val.type = "MSEP")
+```
+Based on the CV plot and RMSEP table, I select c = 5 components because the prediction error reaches its minimum at that point.
+
+In the summary(pcr_model) output:
+X row = cumulative % variance explained in predictors.
+logSalary row = cumulative % variance explained in the response.
+
+With 1 component, X explains 38.56% of predictor variation and 51.80% of response variation.
+With 3 components, X explains 71.01% of predictor variation and 53.20% of response variation.
+
+Step 5: Evaluate PCR on Test set
+```{r}
+c <- 5
+pcr_pred <- predict(pcr_model, test, ncomp = c)
+pcr_rmse <- sqrt(mean((test$logSalary - pcr_pred)^2))
+pcr_rmse
+```
+
+Step 6: Multiple Linear Regression
+```{r}
+mlr_model <- lm(logSalary ~ . - Salary, data = train)
+mlr_pred <- predict(mlr_model, test)
+mlr_rmse <- sqrt(mean((test$logSalary - mlr_pred)^2))
+mlr_rmse
+```
+
+FINAL COMPARISON QUESTIONS
+
+1. PCR Test RMSE = 0.7144598
+MLR Test RMSE = 0.7126638
+The model with lower RMSE, i.e. Multiple Linear Regression, performs better on the test set because it has a smaller prediction error.
+
+2. Comparing R² on Training set
+```{r}
+# PCR R2
+R2(predict(pcr_model, train, ncomp = c), train$logSalary)
+
+# MLR R2
+summary(mlr_model)$r.squared
+```
+On the training set, MLR has R² = 0.6164604 and PCR has R² = 0.5546967
+MLR typically fits training data better because it has a higher R² value and it uses all predictors directly, whereas PCR compresses predictors into components.
